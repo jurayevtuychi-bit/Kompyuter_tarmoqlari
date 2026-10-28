@@ -1,0 +1,14 @@
+{
+  "name": "kompyuter-tarmoqlari-app",
+  "version": "2.0.0",
+  "description": "Kompyuter Tarmoqlari - Interfaol Mobil Ilova (Android APK)",
+  "main": "www/index.html",
+  "scripts": {
+    "build": "echo 'Web assets ready'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  }
+}
