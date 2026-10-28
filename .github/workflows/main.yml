@@ -1,62 +1,61 @@
-name: Build Android APK
+steps:
+  - name: Repozitoriyni yuklab olish
+    uses: actions/checkout@v4
 
-on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
+  - name: Node.js o'rnatish
+    uses: actions/setup-node@v4
+    with:
+      node-version: 20
 
-jobs:
-  build:
-    name: Build Capacitor Android APK
-    runs-on: ubuntu-latest
+  - name: Java JDK 17 o'rnatish
+    uses: actions/setup-java@v4
+    with:
+      distribution: 'zulu'
+      java-version: '17'
 
-    steps:
-      - name: Kodni repozitoriydan yuklab olish (Checkout)
-        uses: actions/checkout@v4
+  - name: Android SDK sozlash va litsenziyalarni tasdiqlash
+    uses: android-actions/setup-android@v3
 
-      - name: Node.js 20 o'rnatish
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+  - name: Android litsenziyalarini avtomatik qabul qilish
+    run: |
+      yes | sdkmanager --licenses || true
 
-      - name: Java JDK 21 o'rnatish (Capacitor 6 va Gradle 8 uchun)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
+  - name: Node paketlarini o'rnatish
+    run: |
+      npm install
 
-      - name: Android SDK sozlash
-        uses: android-actions/setup-android@v3
+  - name: Web fayllarni tekshirish (www papkasi)
+    run: |
+      mkdir -p www
+      # Agar index.html asosiy papkada bo'lsa, www ichiga nusxalash
+      if [ -f "index.html" ] && [ ! -f "www/index.html" ]; then
+        cp index.html www/
+      fi
+      # Yoki kompyuter_tarmoqlari_app.html bo'lsa index.html ga aylantirish
+      if [ -f "kompyuter_tarmoqlari_app.html" ]; then
+        cp kompyuter_tarmoqlari_app.html www/index.html
+      fi
 
-      - name: Web aktivlarni tekshirish va www papkaga nusxalash
-        run: |
-          mkdir -p www
-          if [ -f "kompyuter_tarmoqlari_app.html" ] && [ ! -f "www/index.html" ]; then
-            cp kompyuter_tarmoqlari_app.html www/index.html
-          elif [ -f "index.html" ] && [ ! -f "www/index.html" ]; then
-            cp index.html www/index.html
-          fi
-          ls -la www/
+  - name: Capacitor Android platformasini yaratish va sinxronlash
+    run: |
+      if [ ! -d "android" ]; then
+        npx cap add android
+      fi
+      npx cap sync android
 
-      - name: Capacitor bog'liqliklarini o'rnatish
-        run: |
-          npm install
-          rm -rf android
-          npx cap add android
-          npx cap copy android
-          npx cap sync android
+  - name: Gradle fayliga ruxsat berish
+    run: |
+      cd android
+      chmod +x gradlew
 
-      - name: Gradle orqali Debug APK yig'ish (assembleDebug)
-        working-directory: ./android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+  - name: Android APK ni yig'ish (Assemble Debug)
+    run: |
+      cd android
+      ./gradlew assembleDebug --stacktrace
 
-      - name: Tayyor APK faylni yuklab olish uchun saqlash (Upload Artifact)
-        uses: actions/upload-artifact@v4
-        with:
-          name: KompyuterTarmoqlari-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 14
+  - name: Tayyor APK faylini yuklab olish uchun saqlash (Artifacts)
+    uses: actions/upload-artifact@v4
+    with:
+      name: KompyuterTarmoqlari-APK
+      path: android/app/build/outputs/apk/debug/app-debug.apk
+      if-no-files-found: error
