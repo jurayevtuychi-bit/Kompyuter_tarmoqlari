@@ -16,28 +16,17 @@ jobs:
       - name: Repozitoriy kodini yuklab olish
         uses: actions/checkout@v4
 
-      - name: Node.js 20 muhitini sozlash
+      - name: Node.js muhitini sozlash
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Java JDK 17 o'rnatish
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
-
-      - name: Android SDK sozlash
-        uses: android-actions/setup-android@v3
-
-      - name: Android SDK litsenziyalarini avtomatik qabul qilish
-        run: |
-          yes | sdkmanager --licenses || true
-
-      - name: NPM paketlarini o'rnatish
-        run: |
-          npm install
+          cache: 'gradle'
 
       - name: Web aktivlarni tayyorlash (www papkasi)
         run: |
@@ -50,6 +39,23 @@ jobs:
             cp atom_fizikasi_app.html www/index.html
           elif [ -f "index.html" ]; then
             cp index.html www/index.html
+          else
+            echo "<h1>Mobil ilova yuklanmoqda...</h1>" > www/index.html
+          fi
+
+      - name: NPM paketlarini o'rnatish
+        run: |
+          if [ -f "package.json" ]; then
+            npm install
+          else
+            npm init -y
+            npm install @capacitor/core @capacitor/cli @capacitor/android
+          fi
+
+      - name: Capacitor konfiguratsiyasini ta'minlash
+        run: |
+          if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
+            npx cap init "MobilIlova" "uz.app.mobil" --web-dir "www"
           fi
 
       - name: Capacitor Android platformasini yaratish va sinxronlash
@@ -61,13 +67,12 @@ jobs:
 
       - name: Gradle fayliga bajarish huquqini berish
         run: |
-          cd android
-          chmod +x gradlew
+          chmod +x android/gradlew
 
       - name: Android Debug APK yig'ish (Gradle)
         run: |
           cd android
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Tayyor APK faylini saqlash (Artifacts orqali yuklab olish)
         uses: actions/upload-artifact@v4
