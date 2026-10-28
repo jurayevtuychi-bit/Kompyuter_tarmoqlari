@@ -26,17 +26,16 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
       - name: Web aktivlarni tayyorlash (www papkasi)
         run: |
           mkdir -p www
-          if [ -f "kompyuter_tarmoqlari_app.html" ]; then
+          if [ -f "atom_fizikasi_app.html" ]; then
+            cp atom_fizikasi_app.html www/index.html
+          elif [ -f "kompyuter_tarmoqlari_app.html" ]; then
             cp kompyuter_tarmoqlari_app.html www/index.html
           elif [ -f "veb_tizimlari_app.html" ]; then
             cp veb_tizimlari_app.html www/index.html
-          elif [ -f "atom_fizikasi_app.html" ]; then
-            cp atom_fizikasi_app.html www/index.html
           elif [ -f "index.html" ]; then
             cp index.html www/index.html
           else
@@ -55,7 +54,7 @@ jobs:
       - name: Capacitor konfiguratsiyasini ta'minlash
         run: |
           if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
-            npx cap init "MobilIlova" "uz.app.mobil" --web-dir "www"
+            npx cap init "AtomFizikasi" "uz.app.atomfizikasi" --web-dir "www"
           fi
 
       - name: Capacitor Android platformasini yaratish va sinxronlash
