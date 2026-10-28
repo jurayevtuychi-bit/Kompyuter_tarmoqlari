@@ -1,61 +1,77 @@
-steps:
-  - name: Repozitoriyni yuklab olish
-    uses: actions/checkout@v4
+name: Build Android APK
 
-  - name: Node.js o'rnatish
-    uses: actions/setup-node@v4
-    with:
-      node-version: 20
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
 
-  - name: Java JDK 17 o'rnatish
-    uses: actions/setup-java@v4
-    with:
-      distribution: 'zulu'
-      java-version: '17'
+jobs:
+  build:
+    name: Yig'ish va APK yaratish
+    runs-on: ubuntu-latest
 
-  - name: Android SDK sozlash va litsenziyalarni tasdiqlash
-    uses: android-actions/setup-android@v3
+    steps:
+      - name: Repozitoriy kodini yuklab olish
+        uses: actions/checkout@v4
 
-  - name: Android litsenziyalarini avtomatik qabul qilish
-    run: |
-      yes | sdkmanager --licenses || true
+      - name: Node.js 20 muhitini sozlash
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-  - name: Node paketlarini o'rnatish
-    run: |
-      npm install
+      - name: Java JDK 17 o'rnatish
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-  - name: Web fayllarni tekshirish (www papkasi)
-    run: |
-      mkdir -p www
-      # Agar index.html asosiy papkada bo'lsa, www ichiga nusxalash
-      if [ -f "index.html" ] && [ ! -f "www/index.html" ]; then
-        cp index.html www/
-      fi
-      # Yoki kompyuter_tarmoqlari_app.html bo'lsa index.html ga aylantirish
-      if [ -f "kompyuter_tarmoqlari_app.html" ]; then
-        cp kompyuter_tarmoqlari_app.html www/index.html
-      fi
+      - name: Android SDK sozlash
+        uses: android-actions/setup-android@v3
 
-  - name: Capacitor Android platformasini yaratish va sinxronlash
-    run: |
-      if [ ! -d "android" ]; then
-        npx cap add android
-      fi
-      npx cap sync android
+      - name: Android SDK litsenziyalarini avtomatik qabul qilish
+        run: |
+          yes | sdkmanager --licenses || true
 
-  - name: Gradle fayliga ruxsat berish
-    run: |
-      cd android
-      chmod +x gradlew
+      - name: NPM paketlarini o'rnatish
+        run: |
+          npm install
 
-  - name: Android APK ni yig'ish (Assemble Debug)
-    run: |
-      cd android
-      ./gradlew assembleDebug --stacktrace
+      - name: Web aktivlarni tayyorlash (www papkasi)
+        run: |
+          mkdir -p www
+          if [ -f "kompyuter_tarmoqlari_app.html" ]; then
+            cp kompyuter_tarmoqlari_app.html www/index.html
+          elif [ -f "veb_tizimlari_app.html" ]; then
+            cp veb_tizimlari_app.html www/index.html
+          elif [ -f "atom_fizikasi_app.html" ]; then
+            cp atom_fizikasi_app.html www/index.html
+          elif [ -f "index.html" ]; then
+            cp index.html www/index.html
+          fi
 
-  - name: Tayyor APK faylini yuklab olish uchun saqlash (Artifacts)
-    uses: actions/upload-artifact@v4
-    with:
-      name: KompyuterTarmoqlari-APK
-      path: android/app/build/outputs/apk/debug/app-debug.apk
-      if-no-files-found: error
+      - name: Capacitor Android platformasini yaratish va sinxronlash
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      - name: Gradle fayliga bajarish huquqini berish
+        run: |
+          cd android
+          chmod +x gradlew
+
+      - name: Android Debug APK yig'ish (Gradle)
+        run: |
+          cd android
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Tayyor APK faylini saqlash (Artifacts orqali yuklab olish)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MobilIlova-Debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
